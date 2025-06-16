@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>縦書き小説サイト</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Serif JP', serif;
+            background: linear-gradient(135deg, #f5f3f0 0%, #e8e2db 100%);
+            min-height: 100vh;
+            color: #2c2c2c;
+            overflow-x: auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            border-bottom: 3px solid #d4af37;
+        }
+        
+        .site-title {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #8b4513;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            text-align: center;
+            margin-top: 120px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+            background: linear-gradient(135deg, #a0522d, #8b4513);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .novel-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 40px;
+        }
+        
+        .novel-content {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            height: 600px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 40px;
+            line-height: 2.2;
+            font-size: 1.1rem;
+            letter-spacing: 0.1em;
+            background: linear-gradient(45deg, #fefefe, #f9f9f9);
+            border-radius: 10px;
+            border: 2px solid #e8e2db;
+            position: relative;
+        }
+        
+        .novel-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(
+                    to bottom,
+                    transparent,
+                    transparent 2.4em,
+                    rgba(139, 69, 19, 0.1) 2.4em,
+                    rgba(139, 69, 19, 0.1) 2.5em
+                );
+            pointer-events: none;
+            border-radius: 8px;
+        }
+        
+        .novel-content p {
+            margin-bottom: 1.5em;
+            text-indent: 1em;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .novel-content h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 2em;
+            color: #8b4513;
+            border-right: 3px solid #d4af37;
+            padding-right: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .chapter-nav {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .scroll-hint {
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            animation: fade 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes fade {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+        
+        .upload-area {
+            border: 2px dashed #d4af37;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #8b4513;
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .upload-area.dragover {
+            border-color: #8b4513;
+            background: rgba(139, 69, 19, 0.1);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .novel-content {
+                height: 400px;
+                padding: 20px;
+                font-size: 1rem;
+            }
+            
+            .site-title {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                margin-top: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1 class="site-title">縦書き小説館</h1>
+        <p class="subtitle">あなたの物語を美しい縦書きで</p>
+    </header>
+    
+    <div class="controls">
+        <button class="btn" onclick="toggleEditMode()">編集モード</button>
+        <button class="btn" onclick="addChapter()">章を追加</button>
+        <button class="btn" onclick="exportNovel()">作品をエクスポート</button>
+        <button class="btn" onclick="importNovel()">作品をインポート</button>
+        <input type="file" id="fileInput" class="file-input" accept=".txt,.json" onchange="handleFileUpload(event)">
+    </div>
+    
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <p>📚 テキストファイルをドラッグ&ドロップまたはクリックして小説をアップロード</p>
+        <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">対応形式: .txt, .json</p>
+    </div>
+    
+    <div class="novel-container">
+        <div class="novel-content" id="novelContent" contenteditable="false">
+            <h2>第一章　はじまりの風</h2>
+            <p>春の陽だまりに包まれた小さな町で、一人の少女が空を見上げていた。雲がゆっくりと流れていく様子を眺めながら、彼女は心の奥底に眠る想いを感じていた。</p>
+            <p>「今日もいい天気ね」と、隣に座る猫に話しかける。猫は振り返ることなく、ただ静かに尻尾を揺らすだけだった。</p>
+            <p>風が頬を撫でていく。この穏やかな時間が永遠に続けばいいのに、と彼女は思った。しかし、運命の歯車は既に回り始めていたのである。</p>
+            
+            <h2>第二章　出会いの調べ</h2>
+            <p>町の図書館で、彼女は一冊の古い本と出会った。革装丁の表紙には金色の文字で何かが書かれているが、それは見たことのない文字だった。</p>
+            <p>本を開くと、不思議な香りが漂ってきた。それは花の香りでもなく、木の香りでもない、どこか懐かしい香りだった。</p>
+            <p>「これは何の本だろう」と呟きながら、彼女はページをめくり続けた。すると突然、本から光が溢れ出した。</p>
+        </div>
+        
+        <div class="scroll-hint">← 横にスクロールして続きを読む →</div>
+        
+        <div class="chapter-nav">
+            <button class="btn" onclick="previousChapter()">前の章</button>
+            <button class="btn" onclick="nextChapter()">次の章</button>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+        let chapters = [];
+        let currentChapter = 0;
+        
+        // 初期化
+        function init() {
+            const uploadArea = document.getElementById('uploadArea');
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+            
+            // 初期コンテンツを保存
+            saveCurrentContent();
+        }
+        
+        function toggleEditMode() {
+            const content = document.getElementById('novelContent');
+            isEditMode = !isEditMode;
+            
+            if (isEditMode) {
+                content.contentEditable = true;
+                content.style.border = '2px solid #d4af37';
+                content.style.background = 'rgba(255, 255, 255, 0.95)';
+            } else {
+                content.contentEditable = false;
+                content.style.border = '2px solid #e8e2db';
+                content.style.background = 'linear-gradient(45deg, #fefefe, #f9f9f9)';
+                saveCurrentContent();
+            }
+        }
+        
+        function saveCurrentContent() {
+            const content = document.getElementById('novelContent').innerHTML;
+            chapters[currentChapter] = content;
+        }
+        
+        function addChapter() {
+            saveCurrentContent();
+            const newChapterContent = `
+                <h2>第${chapters.length + 1}章　新しい章</h2>
+                <p>ここに新しい章の内容を書いてください。</p>
+            `;
+            chapters.push(newChapterContent);
+            currentChapter = chapters.length - 1;
+            document.getElementById('novelContent').innerHTML = newChapterContent;
+        }
+        
+        function previousChapter() {
+            if (currentChapter > 0) {
+                saveCurrentContent();
+                currentChapter--;
+                document.getElementById('novelContent').innerHTML = chapters[currentChapter];
+            }
+        }
+        
+        function nextChapter() {
+            if (currentChapter < chapters.length - 1) {
+                saveCurrentContent();
+                currentChapter++;
+                document.getElementById('novelContent').innerHTML = chapters[currentChapter];
+            }
+        }
+        
+        function exportNovel() {
+            saveCurrentContent();
+            const novelData = {
+                title: document.querySelector('.site-title').textContent,
+                chapters: chapters,
+                createdAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(novelData, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'novel_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function importNovel() {
+            document.getElementById('fileInput').click();
+        }
+        
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const content = e.target.result;
+                
+                if (file.name.endsWith('.json')) {
+                    try {
+                        const novelData = JSON.parse(content);
+                        if (novelData.chapters) {
+                            chapters = novelData.chapters;
+                            currentChapter = 0;
+                            document.getElementById('novelContent').innerHTML = chapters[0];
+                            
+                            if (novelData.title) {
+                                document.querySelector('.site-title').textContent = novelData.title;
+                            }
+                        }
+                    } catch (error) {
+                        alert('JSONファイルの読み込みに失敗しました。');
+                    }
+                } else if (file.name.endsWith('.txt')) {
+                    // テキストファイルを章ごとに分割
+                    const text = content;
+                    const chapterSections = text.split(/第\d+章|章\d+/).filter(section => section.trim());
+                    
+                    if (chapterSections.length > 1) {
+                        chapters = chapterSections.map((section, index) => {
+                            const paragraphs = section.trim().split('\n\n').map(p => 
+                                p.trim() ? `<p>${p.trim()}</p>` : ''
+                            ).filter(p => p);
+                            
+                            return `<h2>第${index + 1}章</h2>\n${paragraphs.join('\n')}`;
+                        });
+                    } else {
+                        // 章分けされていない場合は段落で分割
+                        const paragraphs = text.split('\n\n').map(p => 
+                            p.trim() ? `<p>${p.trim()}</p>` : ''
+                        ).filter(p => p);
+                        
+                        chapters = [`<h2>第一章</h2>\n${paragraphs.join('\n')}`];
+                    }
+                    
+                    currentChapter = 0;
+                    document.getElementById('novelContent').innerHTML = chapters[0];
+                }
+            };
+            
+            reader.readAsText(file, 'UTF-8');
+        }
+        
+        // ページ読み込み時に初期化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
