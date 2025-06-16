@@ -49,6 +49,17 @@
             font-weight: 400;
         }
         
+        .reader-controls {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            text-align: center;
+            margin-top: 120px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
         .controls {
             background: rgba(255, 255, 255, 0.8);
             padding: 15px;
@@ -196,7 +207,73 @@
             display: none;
         }
         
-        @media (max-width: 768px) {
+        .novel-content.large-font {
+            font-size: 1.3rem;
+            line-height: 2.4;
+        }
+        
+        .novel-content.small-font {
+            font-size: 0.95rem;
+            line-height: 2.0;
+        }
+        
+        body.dark-theme {
+            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+        }
+        
+        .dark-theme .header {
+            background: rgba(40, 40, 40, 0.9);
+            color: #e0e0e0;
+        }
+        
+        .dark-theme .site-title {
+            color: #d4af37;
+        }
+        
+        .dark-theme .subtitle {
+            color: #bbb;
+        }
+        
+        .dark-theme .novel-container {
+            background: rgba(50, 50, 50, 0.9);
+            border: 1px solid rgba(100, 100, 100, 0.2);
+        }
+        
+        .dark-theme .novel-content {
+            background: linear-gradient(45deg, #3a3a3a, #2e2e2e);
+            border: 2px solid #555;
+            color: #e0e0e0;
+        }
+        
+        .dark-theme .novel-content h2 {
+            color: #d4af37;
+        }
+        
+        .dark-theme .reader-controls,
+        .dark-theme .controls,
+        .dark-theme .chapter-nav {
+            background: rgba(50, 50, 50, 0.8);
+        }
+        
+        .font-size-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .font-size-indicator.show {
+            opacity: 1;
+        }
             .novel-content {
                 height: 400px;
                 padding: 20px;
@@ -205,6 +282,10 @@
             
             .site-title {
                 font-size: 2rem;
+            }
+            
+            .reader-controls {
+                margin-top: 100px;
             }
             
             .controls {
@@ -219,7 +300,8 @@
         <p class="subtitle">あなたの物語を美しい縦書きで</p>
     </header>
     
-    <div class="controls">
+    <!-- 編集機能（デフォルトで非表示） -->
+    <div class="controls" id="editControls" style="display: none;">
         <button class="btn" onclick="toggleEditMode()">編集モード</button>
         <button class="btn" onclick="addChapter()">章を追加</button>
         <button class="btn" onclick="exportNovel()">作品をエクスポート</button>
@@ -227,9 +309,16 @@
         <input type="file" id="fileInput" class="file-input" accept=".txt,.json" onchange="handleFileUpload(event)">
     </div>
     
-    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" style="display: none;">
         <p>📚 テキストファイルをドラッグ&ドロップまたはクリックして小説をアップロード</p>
         <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">対応形式: .txt, .json</p>
+    </div>
+    
+    <!-- 読者向けコントロール -->
+    <div class="reader-controls">
+        <button class="btn" onclick="toggleFontSize()">文字サイズ</button>
+        <button class="btn" onclick="toggleTheme()">表示テーマ</button>
+        <button class="btn" onclick="showEditOptions()" id="editToggle">✏️ 編集</button>
     </div>
     
     <div class="novel-container">
@@ -253,10 +342,17 @@
         </div>
     </div>
 
+    <div class="font-size-indicator" id="fontSizeIndicator">
+        文字サイズ: 標準
+    </div>
+
     <script>
         let isEditMode = false;
         let chapters = [];
         let currentChapter = 0;
+        let currentFontSize = 'normal';
+        let currentTheme = 'light';
+        let editVisible = false;
         
         // 初期化
         function init() {
@@ -285,7 +381,77 @@
             saveCurrentContent();
         }
         
-        function toggleEditMode() {
+        function showEditOptions() {
+            editVisible = !editVisible;
+            const editControls = document.getElementById('editControls');
+            const uploadArea = document.getElementById('uploadArea');
+            const editToggle = document.getElementById('editToggle');
+            
+            if (editVisible) {
+                editControls.style.display = 'block';
+                uploadArea.style.display = 'block';
+                editToggle.textContent = '👁️ 読む';
+                editToggle.title = '読者モードに戻る';
+            } else {
+                editControls.style.display = 'none';
+                uploadArea.style.display = 'none';
+                editToggle.textContent = '✏️ 編集';
+                editToggle.title = '編集機能を表示';
+                
+                // 編集モードも終了
+                if (isEditMode) {
+                    toggleEditMode();
+                }
+            }
+        }
+        
+        function toggleFontSize() {
+            const content = document.getElementById('novelContent');
+            const indicator = document.getElementById('fontSizeIndicator');
+            
+            // 現在のクラスを削除
+            content.classList.remove('large-font', 'small-font');
+            
+            if (currentFontSize === 'normal') {
+                currentFontSize = 'large';
+                content.classList.add('large-font');
+                indicator.textContent = '文字サイズ: 大';
+            } else if (currentFontSize === 'large') {
+                currentFontSize = 'small';
+                content.classList.add('small-font');
+                indicator.textContent = '文字サイズ: 小';
+            } else {
+                currentFontSize = 'normal';
+                indicator.textContent = '文字サイズ: 標準';
+            }
+            
+            // インジケーターを表示
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1500);
+        }
+        
+        function toggleTheme() {
+            const body = document.body;
+            const indicator = document.getElementById('fontSizeIndicator');
+            
+            if (currentTheme === 'light') {
+                currentTheme = 'dark';
+                body.classList.add('dark-theme');
+                indicator.textContent = 'ダークモード';
+            } else {
+                currentTheme = 'light';
+                body.classList.remove('dark-theme');
+                indicator.textContent = 'ライトモード';
+            }
+            
+            // インジケーターを表示
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1500);
+        }
             const content = document.getElementById('novelContent');
             isEditMode = !isEditMode;
             
